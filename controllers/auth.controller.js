@@ -53,6 +53,45 @@ export async function signUp(req, res, next) {
 	}
 }
 // implement sign up logic
-export async function signIn(req, res, next) {}
+export async function signIn(req, res, next) {
+	try {
+		const { email, password } = req.body;
+
+		// check if user exist
+		const user = await User.findOne({ email });
+
+		// if user doesn't exist
+		if (!user) {
+			const error = new Error('User not found');
+			error.statusCode = 404;
+			throw error;
+		}
+
+		// if user exists, validate passeord
+		const isValidPassword = await bcrypt.compare(password, user.password);
+
+		// if invalid password
+		if (!isValidPassword) {
+			const error = new Error('Invalid passwrod');
+			error.statusCode = 401;
+			throw error;
+		}
+
+		// valid password
+		const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+		// return status of 200
+		res.status(200).json({
+			success: true,
+			message: 'User successfully sign-in',
+			data: {
+				token,
+				user,
+			},
+		});
+	} catch (error) {
+		next(error);
+	}
+}
 // implement sign up logic
 export async function signOut(req, res, next) {}
