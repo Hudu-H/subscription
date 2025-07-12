@@ -12,9 +12,9 @@ import errorMiddleware from './middlewares/error.middleware.js';
 const app = express();
 
 // express middlewares
-app.use(express.json);
+app.use(express.json());
 app.use(urlencoded({ extended: false }));
-app.use(cookieParser);
+app.use(cookieParser());
 
 // routes
 app.use('/api/v1/auth', authRouter);
