@@ -5,7 +5,7 @@ import { DB_URI, NODE_ENV } from '../config/env.js';
 
 // check if mongodb is connected
 if (!DB_URI) {
-	throw new Error('Please define MONGODB_URI in dotenv.');
+	throw new Error('Please define DB_URI in dotenv.');
 }
 
 // connect to database
