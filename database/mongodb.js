@@ -9,7 +9,7 @@ if (!DB_URI) {
 }
 
 // connect to database
-async function connectToDatabse() {
+async function connectToDatabase() {
 	try {
 		await mongoose.connect(DB_URI);
 
@@ -21,4 +21,4 @@ async function connectToDatabse() {
 	}
 }
 
-export default connectToDatabse;
+export default connectToDatabase;

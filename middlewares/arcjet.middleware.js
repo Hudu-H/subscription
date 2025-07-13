@@ -1,9 +1,9 @@
 // internal imports
-import aj from '../config/arcjet';
+import aj from '../config/arcjet.js';
 
 async function arcjetMiddleware(req, res, next) {
 	try {
-		const decision = aj.protect(req);
+		const decision = await aj.protect(req, { requested: 1 });
 
 		if (decision.isDenied()) {
 			if (decision.reason.isRateLimit()) {
