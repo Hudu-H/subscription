@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 // internal imports
 import { JWT_SECRET } from '../config/env.js';
 import User from '../models/user.model.js';
+import BlacklistToken from '../models/blacklistToken.model.js';
 
 // protect routes
 async function authorize(req, res, next) {
@@ -17,6 +18,12 @@ async function authorize(req, res, next) {
 		// if no token
 		if (!token) {
 			return res.status(401).json({ message: 'Unauthorize' });
+		}
+
+		// check if token is blacklisted
+		const blacklist = await BlacklistToken.findOne({ token });
+		if (blacklist) {
+			return res.status(401).json({ message: 'Token has been invalidated' });
 		}
 
 		// verify token if it exists

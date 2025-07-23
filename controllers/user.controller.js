@@ -17,20 +17,20 @@ export async function getUsers(req, res, next) {
 	}
 }
 
-// fetch user from database
+// fetch single user from database
 export async function getUser(req, res, next) {
 	try {
 		// find all Users
 		const user = await User.findById(req.params.id).select('-password');
 
-		// if not user
+		// if no user
 		if (!user) {
 			const error = new Error('User not found');
 			error.statusCode = 404;
 			throw error;
 		}
 
-		// return json
+		// else return json
 		res.status(200).json({
 			success: true,
 			data: user,
