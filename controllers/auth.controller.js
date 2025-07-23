@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 // internal import
 import User from '../models/user.model.js';
 import { JWT_EXPIRES_IN, JWT_SECRET } from '../config/env.js';
+import dayjs from 'dayjs';
+import BlacklistToken from '../models/blacklistToken.model.js';
 
 // implement sign up logic
 export async function signUp(req, res, next) {
@@ -24,7 +26,7 @@ export async function signUp(req, res, next) {
 			throw error;
 		}
 
-		// if doesn't exist, hash password
+		// if user doesn't exist, hash password
 		const salt = await bcrypt.genSalt(10);
 		const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -52,7 +54,7 @@ export async function signUp(req, res, next) {
 		next(error);
 	}
 }
-// implement sign up logic
+// implement sign in logic
 export async function signIn(req, res, next) {
 	try {
 		const { email, password } = req.body;
@@ -72,7 +74,7 @@ export async function signIn(req, res, next) {
 
 		// if invalid password
 		if (!isValidPassword) {
-			const error = new Error('Invalid passwrod');
+			const error = new Error('Invalid password');
 			error.statusCode = 401;
 			throw error;
 		}
@@ -94,4 +96,26 @@ export async function signIn(req, res, next) {
 	}
 }
 // implement sign up logic
-export async function signOut(req, res, next) {}
+export async function signOut(req, res, next) {
+	try {
+		const authHeader = req.headers.authorization;
+		if (authHeader && authHeader.startsWith('Bearer ')) {
+			const token = authHeader.split(' ')[1];
+
+			// decode token to get expiry
+			const decoded = jwt.decode(token);
+			const expiry =
+				decoded && decoded.exp ? new Date(decoded.exp * 1000) : new Date(dayjs + 3600 * 1000);
+
+			// save token to blacklist
+			await BlacklistToken.create({ token, expiry });
+		}
+
+		res.status(200).json({
+			success: true,
+			message: 'User successfully signed out',
+		});
+	} catch (error) {
+		next(error);
+	}
+}
