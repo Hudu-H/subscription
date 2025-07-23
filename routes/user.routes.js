@@ -1,7 +1,13 @@
 import { Router } from 'express';
 
 // internal imports
-import { getUser, getUsers } from '../controllers/user.controller.js';
+import {
+	createUser,
+	deleteUser,
+	getUser,
+	getUsers,
+	updateUser,
+} from '../controllers/user.controller.js';
 import authorize from '../middlewares/auth.middleware.js';
 
 // create instance of userRoute
@@ -14,12 +20,12 @@ userRouter.get('/', getUsers);
 userRouter.get('/:id', authorize, getUser);
 
 // create new user endpoint
-userRouter.post('/', (req, res) => res.send({ title: 'CREATE new user' }));
+userRouter.post('/', createUser);
 
 // update user endpoint
-userRouter.put('/:id', (req, res) => res.send({ title: 'UPDATE user' }));
+userRouter.put('/:id', authorize, updateUser);
 
 // delete user endpoint
-userRouter.delete('/:id', (req, res) => res.send({ title: 'GET all users' }));
+userRouter.delete('/:id', authorize, deleteUser);
 
 export default userRouter;
