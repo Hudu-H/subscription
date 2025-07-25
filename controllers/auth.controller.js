@@ -14,7 +14,7 @@ export async function signUp(req, res, next) {
 	session.startTransaction();
 
 	try {
-		// logic to create a new user
+		// create a new user
 		const { name, email, password } = req.body;
 
 		// check if user already exist
@@ -26,7 +26,7 @@ export async function signUp(req, res, next) {
 			throw error;
 		}
 
-		// if user doesn't exist, hash password
+		// hash password
 		const salt = await bcrypt.genSalt(10);
 		const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -69,7 +69,7 @@ export async function signIn(req, res, next) {
 			throw error;
 		}
 
-		// if user exists, validate passeord
+		// if user exists, validate password
 		const isValidPassword = await bcrypt.compare(password, user.password);
 
 		// if invalid password
@@ -95,7 +95,7 @@ export async function signIn(req, res, next) {
 		next(error);
 	}
 }
-// implement sign up logic
+// implement sign out logic
 export async function signOut(req, res, next) {
 	try {
 		const authHeader = req.headers.authorization;
