@@ -1,4 +1,7 @@
 // internal imports
+import dayjs from 'dayjs';
+
+// internal imports
 import { SERVER_URL } from '../config/env.js';
 import { workflowClient } from '../config/upstash.js';
 import Subscription from '../models/subscription.model.js';
@@ -35,7 +38,7 @@ export async function createSubscription(req, res, next) {
 // get all user subs
 export async function getUserSubscriptions(req, res, next) {
 	try {
-		// check if the user is the same as the one in the token
+		// check if user is same as the one in the token
 		if (req.user.id != req.params.id) {
 			const error = new Error('You are not the owner of this account');
 			error.statusCode = 401;
@@ -48,6 +51,177 @@ export async function getUserSubscriptions(req, res, next) {
 			success: true,
 			data: subscriptions,
 		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+// update subscription
+export async function updateSubscription(req, res, next) {
+	try {
+		const { id: subscriptionId } = req.params;
+		const subscription = await Subscription.findById(subscriptionId);
+
+		// if no subscription
+		if (!subscription) {
+			const error = new Error('Subscription not found');
+			error.statusCode = 404;
+			throw error;
+		}
+
+		// check subscription belongs to user
+		if (subscription.user.toString() !== req.user.id) {
+			const error = new Error('Unauthorize');
+			error.statusCode = 401;
+			throw error;
+		}
+
+		// allow updates if all match
+		Object.assign(subscription, req.body);
+		await subscription.save();
+
+		res.status(200).json({
+			success: true,
+			data: subscription,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+// get all subscriptions
+export async function getAllSubscriptions(req, res, next) {
+	try {
+		const subscriptions = await Subscription.find().populate('user', 'name email');
+
+		res.status(200).json({
+			success: true,
+			data: subscriptions,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+// get subscription details
+export async function getSubscriptionDetails(req, res, next) {
+	try {
+		const { id: subscriptionId } = req.params;
+		const subscription = await Subscription.findById(subscriptionId).populate('user', 'name email');
+
+		// if no subscription found
+		if (!subscription) {
+			const error = new Error('Subscription not found');
+			error.statusCode = 404;
+			throw error;
+		}
+
+		// check for subscription - user auth
+		if (subscription.user._id.toString() !== req.user.id) {
+			const error = new Error('Unauthorize');
+			error.statusCode = 403;
+			throw error;
+		}
+
+		// response
+		res.status(200).json({
+			success: true,
+			data: subscription,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+// cancel subscription
+export async function cancelSubscription(req, res, next) {
+	try {
+		const { id: subscriptionId } = req.params;
+		const subscription = await Subscription.findById(subscriptionId);
+
+		// if no subscription
+		if (!subscription) {
+			const error = new Error('Subscription not found');
+			error.statusCode = 401;
+			throw error;
+		}
+
+		// check user-subscription authorization
+		if (subscription.user.toString() !== req.user.id) {
+			const error = new Error('Unauthorized');
+			error.statusCode = 401;
+			throw error;
+		}
+
+		// check if already cancelled
+		if (subscription.status == 'cancelled') {
+			const error = new Error('Subscription already cancelled');
+			error.statusCode = 400;
+			throw error;
+		}
+
+		subscription.status = 'cancelled';
+		subscription.cancelledAt = dayjs.toDate();
+		await subscription.save();
+
+		// response
+		res.status(200).json({
+			success: true,
+			message: 'Subscription cancelled',
+			data: subscription,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+// delete subscription
+export async function deleteSubscription(req, res, next) {
+	try {
+		const { id: subscriptionId } = req.params;
+		const subscription = await Subscription.findById(subscriptionId);
+
+		// if not subs
+		if (!subscription) {
+			const error = new Error('Subscription not found');
+			error.statusCode = 404;
+			throw error;
+		}
+
+		// check subs auth to user
+		if (subscription.user.toString() !== req.user.id) {
+			const error = new Error('Unauthorize');
+			error.statusCode = 403;
+			throw error;
+		}
+
+		// delete subs
+		await subscription.deleteOne();
+
+		res.status(200).json({
+			success: true,
+			message: 'subscription deleted',
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+// get upcoming renewals
+export async function getUpcomingRenwals(req, res, next) {
+	try {
+		const userId = req.user.id;
+		const now = dayjs();
+		const in30Days = now.add(30, 'day');
+
+		// find the subs to renew
+		const subscriptions = await Subscription.find({
+			user: userId,
+			status: 'active',
+			renewalDate: { $gte: now.toDate(), $lte: in30Days.toDate() },
+		}).populate('user', 'name email');
+
+		res.status(200).json({ success: true, data: subscriptions });
 	} catch (error) {
 		next(error);
 	}

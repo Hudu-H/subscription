@@ -20,7 +20,7 @@ export async function getUsers(req, res, next) {
 // fetch single user from database
 export async function getUser(req, res, next) {
 	try {
-		// find all Users
+		// find a user
 		const user = await User.findById(req.params.id).select('-password');
 
 		// if no user
@@ -41,53 +41,67 @@ export async function getUser(req, res, next) {
 }
 
 // create a user
-export async function createUser(req, res, next) {
+export async function createUser(req, res) {
 	try {
 		const user = new User(req.body);
 		await user.save();
+
 		res.status(201).json({
 			success: true,
 			message: 'New user created successfully',
 		});
 	} catch (error) {
-		res.status(400).json({ message: 'Failed to create user, please try again' });
-		next(error);
+		const err = new Error('Failed to create user, please try again', { cause: error });
+		err.statusCode = 400;
+		throw err;
 	}
 }
 
 // update user logic
-export async function updateUser(req, res, next) {
+export async function updateUser(req, res) {
 	try {
 		const user = await User.findByIdAndUpdate(req.params.id, req.body, {
 			new: true,
 			runValidators: true,
 		});
+
+		// if no user
 		if (!user) {
-			return res.status(404).json({
-				success: true,
-				message: 'User not found',
-			});
+			const error = new Error('User not found');
+			error.statusCode = 404;
+			throw error;
 		}
-		res.json(user);
+
+		res.status(200).json({
+			success: true,
+			data: user,
+		});
 	} catch (error) {
-		res.status(400).json({ message: 'Unable to update user this time' });
-		next(error);
+		const err = new Error('Unable to update user this time', { cause: error });
+		err.statusCode = 400;
+		throw err;
 	}
 }
 
 // delete a user
-export async function deleteUser(req, res, next) {
+export async function deleteUser(req, res) {
 	try {
 		const user = await User.findByIdAndDelete(req.params.id);
+
+		// if no user
 		if (!user) {
-			return res.status(404).json({ message: 'User not found' });
+			const error = new Error('User not found');
+			error.statusCode = 404;
+			throw error;
 		}
+
 		res.json({
 			success: true,
 			message: 'User deleted successfully',
 		});
 	} catch (error) {
-		res.status(400).json({ message: 'failed to delete user.' });
-		next(error);
+		const err = new Error('failed to delete user', { cause: error });
+		err.statusCode = 400;
+		throw err;
 	}
 }
